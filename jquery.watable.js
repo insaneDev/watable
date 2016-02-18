@@ -40,6 +40,7 @@
             checkboxes: false, //show body checkboxes
             checkAllToggle: true, //show check all toggle
             actions: '', //holds action links
+            paginator: null,
             pageSize: 10, //current pagesize
             pageSizePadding: false, //pad with empty rows
             pageSizes: [10, 20, 30, 40, 50, 'All'], //available pagesizes
@@ -434,7 +435,18 @@
 
                 //find out what rows to show next...
                 _pageSize = priv.options.pageSize == -1 ? _data.rows.length : Math.min(priv.options.pageSize, _data.rows.length);
-                _totalPages = Math.ceil(_data.rows.length / _pageSize) || 1;
+
+                if(priv.options.totalPages != null){
+                    var totalPagesType = typeof(priv.options.totalPages);
+                    if(totalPagesType == 'number'){
+                        _totalPages = priv.options.totalPages;
+                    }else if(totalPagesType == 'function'){
+                        _totalPages = priv.options.totalPages.apply(this, [_data, _pageSize]);
+                    }
+                }else{
+                    _totalPages = Math.ceil(_data.rows.length / _pageSize) || 1;
+                }
+                
                 _currPage = Math.min(_totalPages, _currPage);
                 _data.meta.rowsRendered = {};
 
@@ -593,6 +605,7 @@
                     }
                     link.appendTo(footPagerUl);
                 }
+                
                 $('<li class="{0}"><a href="#">»</a></li>'.f(_currPage == _totalPages ? 'disabled' : ''))
                     .on('click', {pageIndex: _currPage + 1}, priv.pageChanged).appendTo(footPagerUl);
 
@@ -759,13 +772,20 @@
         /*
          calls the webservice(if defined).
          */
-        priv.update = function (callback, skipCols, resetChecked) {
+        priv.update = function (callback, skipCols, resetChecked, options) {
+
+            var options = options||{};
+
+            priv.log('update options:{0}'.f( JSON.stringify(options) || ''));
+
             if (!priv.options.url) {
                 priv.log('no url found');
                 return;
             }
+            
+            var urlData = options.data ? $.extend(options.data, priv.options.urlData) : priv.options.urlData;
 
-            priv.log('requesting data from url:{0} data:{1}'.f(priv.options.url, JSON.stringify(priv.options.urlData) || ''));
+            priv.log('requesting data from url:{0} data:{1}'.f(priv.options.url, JSON.stringify(urlData) || ''));
             var start = new priv.ext.XDate();
 
             $.ajax({
@@ -773,7 +793,7 @@
                 type: priv.options.urlPost ? 'POST' : 'GET',
                 dataType: 'json',
                 contentType: "application/json; charset=utf-8",
-                data: priv.options.urlData,
+                data: urlData,
                 async: true,
                 success: function (data) {
                     priv.log('request finished in {0}ms.'.f(new priv.ext.XDate() - start));
@@ -1633,9 +1653,9 @@
             return publ;
         };
 
-        publ.update = function (callback, skipCols, resetChecked) {
+        publ.update = function (callback, skipCols, resetChecked, options) {
             priv.log('publ.update called');
-            priv.update(callback, skipCols, resetChecked);
+            priv.update(callback, skipCols, resetChecked, options);
             return publ;
         };
 

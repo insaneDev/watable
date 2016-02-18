@@ -590,6 +590,9 @@
                 var footDiv = $('<div class="btn-group"></div>').appendTo(footToolbar);
                 var footPagerUl = $('<ul class="pagination"></ul>').appendTo(footDiv);
 
+                $('<li class="{0}"><a href="#">First</a></li>'.f(_currPage == 1 ? 'disabled' : ''))
+                    .on('click', {pageIndex: 1 }, priv.pageChanged).appendTo(footPagerUl);
+
                 $('<li class="{0}"><a href="#">«</a></li>'.f(_currPage == 1 ? 'disabled' : ''))
                     .on('click', {pageIndex: _currPage - 1}, priv.pageChanged).appendTo(footPagerUl);
 
@@ -608,6 +611,9 @@
                 
                 $('<li class="{0}"><a href="#">»</a></li>'.f(_currPage == _totalPages ? 'disabled' : ''))
                     .on('click', {pageIndex: _currPage + 1}, priv.pageChanged).appendTo(footPagerUl);
+
+                $('<li class="{0}"><a href="#">Last</a></li>'.f(_currPage ==  _totalPages ? 'disabled' : ''))
+                    .on('click', {pageIndex: _totalPages}, priv.pageChanged).appendTo(footPagerUl);
 
                 //create pagesize dropdown
                 if (priv.options.pageSizes.length) {
@@ -732,7 +738,19 @@
             switch (_data.cols[col].type) {
                 case "string":
                     val = val || '';
-                    cell.html(format.f(val));
+                    val = format.f(val);
+
+                    var matches = String(format).match(/{{\w+}}/gim);
+                    
+                    if(matches){
+                        var property = null;
+                        for (var i = matches.length - 1; i >= 0; i--) {
+                            property = matches[i].replace(/[\{\}]+/gim, '');
+                            val = val.replace(matches[i], row[property]);
+                        };
+                    }
+                    
+                    cell.html(val);
                     break;
                 case "number":
                     val = val || '';
